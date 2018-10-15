@@ -1,0 +1,88 @@
+########################################################
+## Основные параметры
+smtpd_banner = $myhostname ESMTP server
+biff = no
+
+# Максимальный размер письма. По умолчанию всего 10Mb
+message_size_limit = 204800000
+
+# Основные параметры хоста
+myhostname = ns1.dom
+mydestination = $myhostname, ns1.dom, localhost.ns1.dom, localhost
+myorigin = /etc/mailname
+mynetworks = 127.0.0.0/8
+mailbox_size_limit = 0
+virtual_mailbox_limit = 0
+recipient_delimiter = +
+#inet_interfaces = ipv4
+inet_protocols = ipv4
+append_dot_mydomain = no
+readme_directory = no
+
+# TLS параметры
+smtpd_use_tls=yes
+smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+
+# информация о включении SSL в SMTP-клиенте.
+smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+relayhost =
+
+# SASL параметры
+smtp_sasl_auth_enable = yes
+smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
+smtp_sasl_security_options = noanonymous
+smtp_sasl_type = cyrus
+smtp_sasl_mechanism_filter = login
+smtp_sender_dependent_authentication = yes
+sender_dependent_relayhost_maps = hash:/etc/postfix/sender_relay
+sender_canonical_maps = hash:/etc/postfix/canonical
+
+###########################################################
+## Ограничения и запреты
+# Запретить ETRN команду
+smtpd_etrn_restrictions = reject
+
+# Запретить VRFY команду
+disable_vrfy_command = yes
+
+# Требовать наличие EHLO (HELO) команды
+smtpd_helo_required = yes
+
+# Всегда отклонять письма для всех неизвестных ящиков
+smtpd_reject_unlisted_recipient = yes
+
+# Ограничения на клиента - принимаем только если есть PTR (не жёсткий запрет)
+smtpd_client_restrictions =
+ permit_mynetworks
+ reject_unknown_reverse_client_hostname
+ permit
+
+# Ограничения на HELO. Отклоняем письма от всех хостов, которые даже представиться не могут
+smtpd_helo_restrictions =
+ permit_mynetworks
+ reject_invalid_helo_hostname
+ reject_non_fqdn_helo_hostname
+ permit
+
+# Ограничения на MAIL FROM. Отклоняем все письма, отправитель которых предоставил невалидный адрес
+smtpd_sender_restrictions =
+ reject_non_fqdn_sender
+ reject_unknown_sender_domain
+ permit
+
+# Ограничения на RCPT TO. Принимаем только для известных нам адресов
+smtpd_recipient_restrictions =
+ reject_non_fqdn_recipient
+ reject_unlisted_recipient
+ permit_mynetworks
+ reject_unauth_destination
+ permit
+
+# Ограничения на данные. Не принимаем в случае некорректной передачи
+ smtpd_data_restrictions =
+ reject_unauth_pipelining
